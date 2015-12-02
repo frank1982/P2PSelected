@@ -18,4 +18,8 @@ struct Constant {
         i=UInt32(_colorArray.count)
         return _colorArray[Int(arc4random_uniform(i))]
     }
+    
+    let LOADNUM=10//一次显示或加载的数据数量
+    let ICONNUMBERSHOWINSCREEN=8//icon一屏显示数量
+    let LOCALSAVENUM=10//本地允许存储的数据数量
 }

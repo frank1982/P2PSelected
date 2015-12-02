@@ -16,41 +16,85 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var thread:NSThread!
     var isFinishAni:Bool!
     var dao:Dao?
+    var _constant:Constant?
 
     func application(application: UIApplication, didFinishLaunchingWithOptions launchOptions: [NSObject: AnyObject]?) -> Bool {
-    
+        
+        _constant=Constant()
         dao=Dao()
         isFinishAni=false
         
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), {
             
-            if (self.dao!.findLocalNewID() == nil )
-            {
-                print("本地无数据")
-                var newID = self.dao?.getNewestInfoFromServer()
-                print(newID)
-                
-            }else{
-                
-            }
-
-     
-            /*
-            if(self.dao!.findLocalNewID() != nil){
-                
-            }else{
-                
-                
-            }
-            */
+            var newID:String? = self.dao!.findLocalNewID()
+            var localNewestProduct:Product?//本地最新一条数据，将传递给viewController
             
-            //通知主线程刷新
-            dispatch_async(dispatch_get_main_queue(), {
- 
-            });
+            if (newID == nil )
+            {//本地无数据
+                
+                print("本地无数据")
+                //从服务器查找最新数据的id
+                do{
+                    var newServerID = try self.dao?.getNewestInfoFromServer()
+                    //根据id从服务端获取该条数据详细
+                    var product:Product? = try self.dao?.getDataFromServerByID(newServerID!)
+                    self.dao!.saveData(product!)
+                    print("插入服务端的最新数据")
+                    
+                }catch{
+                    
+                    print("从服务端查询的最新一条数据为空或者根据最新数据从服务端查找数据明细失败")
+                    //本地无数据，也无法从服务端下载数据，需要设置一个default case
+                }
+                
+            }else{//self.dao!.findLocalNewID() != nil
+                
+                print("本地最新数据id:\(newID)")
+                //比较本地最新数据和服务端最新数据大小
+                //从服务器查找最新数据的id
+                var newServerID = self.dao?.getNewestInfoFromServer()
+                if Int(newID!) < Int(newServerID!){//本地数据需要更新,从服务端插入最新的数据
+                    
+                    print("本地数据不是最新")
+                    //根据id从服务端获取该条数据详细
+                    do {
+                        var product:Product? = try self.dao?.getDataFromServerByID(newServerID!)
+                        //本地已经存储的数据数量是否超出最大范围？
+                        if(self.dao?.localSaveProductNum() >= self._constant?.LOCALSAVENUM){
+                            
+                            //删除本地最旧一条数据
+                            self.dao?.delLocalOldestData()
+                        }
+                        //插入服务端的最新数据
+                        self.dao?.saveData(product!)
+                        print("插入服务端的最新数据")
+                        
+                    }catch{
+                        
+                        print("根据最新数据从服务端查找数据明细失败")
+                    }
+
+                }
+                //本地数据不需要更新
+            }
+            while(true){
+
+                //通知主线程刷新
+                if self.isFinishAni == true{
+                    dispatch_async(dispatch_get_main_queue(), {
+                        
+                        //goto view controller
+                        var destinationView=ViewController()
+                        self.window!.rootViewController=destinationView
+                        
+                    })
+                    return
+                }
+                
+                sleep(1)
+            }
         })
-        
-        
+   
         let storyBoard=UIStoryboard(name: "LaunchScreen", bundle: nil)
         var myRootViewController:UIViewController
         myRootViewController=storyBoard.instantiateInitialViewController()!
