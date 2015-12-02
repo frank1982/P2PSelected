@@ -36,25 +36,23 @@ class Dao {
         return id
     }
     
-    //从服务端查询最新数据id,采用异步方式
+    //从服务端查询最新数据id,采用同步方式
     func getNewestInfoFromServer()->String?{
         
         var urlString=URL+"/touWhat/getNewestInfo.action"
         var nsUrl:NSURL=NSURL(string:urlString)!
         var request:NSURLRequest=NSURLRequest(URL: nsUrl)
-        var data:NSData?
+        var response:NSURLResponse?
         var error:NSError?
         var result:String?
-        NSURLConnection.sendAsynchronousRequest(request, queue: NSOperationQueue.mainQueue(), completionHandler:{
-            (response, data, error) -> Void in
+        do {
+            let data = try NSURLConnection.sendSynchronousRequest(request, returningResponse: &response)
+            result=NSString(data:data,encoding:NSUTF8StringEncoding) as! String
             
-            if (error != nil) {
-
-            }else{
-                
-                result=NSString(data: data!, encoding: NSUTF8StringEncoding) as! String
-            }
-        })        
+        }catch(let error){
+            print("查找服务器最新编号失败...")
+            print(error)
+        }
         return result
     }
 }

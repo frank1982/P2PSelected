@@ -28,7 +28,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             {
                 print("本地无数据")
                 var newID = self.dao?.getNewestInfoFromServer()
-                
+                print(newID)
                 
             }else{
                 
