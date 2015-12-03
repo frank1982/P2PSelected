@@ -13,9 +13,8 @@ import CoreData
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
-    var thread:NSThread!
     var isFinishAni:Bool!
-    var dao:Dao?
+    var dao:Dao!
     var _constant:Constant?
 
     func application(application: UIApplication, didFinishLaunchingWithOptions launchOptions: [NSObject: AnyObject]?) -> Bool {
@@ -26,18 +25,19 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), {
             
-            var newID:String? = self.dao!.findLocalNewID()
+            var newID = self.dao!.findLocalNewID()
             var localNewestProduct:Product?//本地最新一条数据，将传递给viewController
             
-            if (newID == nil )
-            {//本地无数据
+            if (newID == nil)
                 
+            {//本地无数据
+               
                 print("本地无数据")
                 //从服务器查找最新数据的id
                 do{
-                    var newServerID = try self.dao?.getNewestInfoFromServer()
+                    var newServerID:Int32? = try self.dao?.getNewestInfoFromServer()
                     //根据id从服务端获取该条数据详细
-                    var product:Product? = try self.dao?.getDataFromServerByID(newServerID!)
+                    var product:Product? = try self.dao?.getDataFromServerByID(String(newServerID!))
                     self.dao!.saveData(product!)
                     print("插入服务端的最新数据")
                     
@@ -48,22 +48,29 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                 }
                 
             }else{//self.dao!.findLocalNewID() != nil
-                
+               
                 print("本地最新数据id:\(newID)")
-                //比较本地最新数据和服务端最新数据大小
                 //从服务器查找最新数据的id
-                var newServerID = self.dao?.getNewestInfoFromServer()
-                if Int(newID!) < Int(newServerID!){//本地数据需要更新,从服务端插入最新的数据
-                    
+                var newIDFromServer:Int32? = self.dao?.getNewestInfoFromServer()
+                print("服务端最新数据id:\(newIDFromServer)")
+
+                //比较本地最新数据()和服务端最新数据大小
+ 
+                if Int32(newID!) < Int32(newIDFromServer!){//本地数据需要更新,从服务端插入最新的数据
+
                     print("本地数据不是最新")
                     //根据id从服务端获取该条数据详细
                     do {
-                        var product:Product? = try self.dao?.getDataFromServerByID(newServerID!)
+                        self.dao.delLocalOldestData()
+                        var product:Product? = try self.dao?.getDataFromServerByID(String(newIDFromServer!))
                         //本地已经存储的数据数量是否超出最大范围？
+                        print("done")
                         if(self.dao?.localSaveProductNum() >= self._constant?.LOCALSAVENUM){
                             
                             //删除本地最旧一条数据
+                            print("go to 删除本地最旧一条数据")
                             self.dao?.delLocalOldestData()
+                            print("go to 删除本地最旧一条数据 done")
                         }
                         //插入服务端的最新数据
                         self.dao?.saveData(product!)

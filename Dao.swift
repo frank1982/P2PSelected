@@ -9,13 +9,11 @@ class Dao {
     //let URL:String="http://127.0.0.1:8080"
     
     //查找本地最新的数据id
-    func findLocalNewID()->String?{
-        
+    func findLocalNewID()->Int32?{
+ 
         let app=UIApplication.sharedApplication().delegate as! AppDelegate
         let context = app.managedObjectContext
         var error:NSError?
-        var product=NSEntityDescription.insertNewObjectForEntityForName("Product", inManagedObjectContext: context) as! Product
-        
         var fetchRequest:NSFetchRequest=NSFetchRequest()
         fetchRequest.fetchLimit=1
         fetchRequest.fetchOffset=0
@@ -24,31 +22,36 @@ class Dao {
         var sortDescrpitor = NSSortDescriptor(key: "id", ascending: false,selector: Selector("localizedStandardCompare:"))
         fetchRequest.sortDescriptors=[sortDescrpitor]
         
-        var id:String?
+        var result:Int32?
+
         do{
             var fetchObjects:[AnyObject] = try context.executeFetchRequest(fetchRequest)
-            for _product:Product in fetchObjects as! [Product]{
-                
-                id=_product.id
+            if(fetchObjects.count > 0){
+                for _product:Product in fetchObjects as! [Product]{
+                    
+                    result=_product.id!.intValue
+                }
             }
+            
         }catch{
-            print(error)
+            
         }
-        return id
+        return result
+        
     }
     
     //从服务端查询最新数据id,采用同步方式
-    func getNewestInfoFromServer()->String?{
+    func getNewestInfoFromServer()->Int32?{
         
         var urlString=URL+"/touWhat/getNewestInfo.action"
         var nsUrl:NSURL=NSURL(string:urlString)!
         var request:NSURLRequest=NSURLRequest(URL: nsUrl)
         var response:NSURLResponse?
         var error:NSError?
-        var result:String?
+        var result:Int32?
         do {
             let data = try NSURLConnection.sendSynchronousRequest(request, returningResponse: &response)
-            result=NSString(data:data,encoding:NSUTF8StringEncoding) as! String
+            result=NSString(data:data,encoding:NSUTF8StringEncoding)?.intValue
             
         }catch(let error){
             print("查找服务器最新编号失败...")
@@ -59,6 +62,7 @@ class Dao {
     //根据id从服务端同步获取数据明细
     func getDataFromServerByID(id:String)->Product?{
         
+        print("getDataFromServerByID:\(id)")
         let app=UIApplication.sharedApplication().delegate as! AppDelegate
         let context=app.managedObjectContext
         var urlString=URL+"/touWhat/getProductInfoByID2.action?id="+id
@@ -76,7 +80,7 @@ class Dao {
         catch{
             print("根据id:\(id)从服务端获取对应数据明细失败")
         }
-        product.id=String(jsonResult["id"] as? NSNumber)
+        product.id=jsonResult["id"] as! NSNumber
         product.name=jsonResult["name"] as! String
         product.title=jsonResult["title"] as! String
         product.author=jsonResult["author"] as! String
@@ -120,12 +124,11 @@ class Dao {
     }
     
     //查找本地已经存储的数据数量
-    func localSaveProductNum()->Int{
+    func localSaveProductNum()->Int?{
         
         let app=UIApplication.sharedApplication().delegate as! AppDelegate
         let context = app.managedObjectContext
         var error:NSError?
-        var product=NSEntityDescription.insertNewObjectForEntityForName("Product", inManagedObjectContext: context) as! Product
         var fetchRequest:NSFetchRequest=NSFetchRequest()
         fetchRequest.fetchOffset=0
         var entity:NSEntityDescription = NSEntityDescription.entityForName("Product", inManagedObjectContext: context)!
@@ -139,12 +142,13 @@ class Dao {
         }catch{
             print("查找本地已经存储的数据数量失败")
         }
-        return num!
+        return num
     }
     
     //删除本地最旧一条数据
     func delLocalOldestData(){
         
+        print("delLocalOldestData")
         let app=UIApplication.sharedApplication().delegate as! AppDelegate
         let context=app.managedObjectContext
         var error:NSError?
@@ -164,16 +168,19 @@ class Dao {
                     context.deleteObject(_product)
                     do{
                         try context.save()
-                        print("本地最旧数据\(_product.id)已经删除")
                     }catch(let error){
-                        print("本地最旧数据\(_product.id)删除失败")
+                        print("本地数据删除失败...")
+                        print("error")
                     }
                 }
             }
         }catch(let error){
             
-            print("在执行删除本地最旧数据时，查询本地数据失败...")
+            print("在执行删除本地数据时，查询本地数据失败...")
+            print("error")
         }
+        print("本地数据已经删除...")
+
     }
     
 }

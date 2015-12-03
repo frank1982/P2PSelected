@@ -1,3 +1,10 @@
+//
+//  Product.swift
+//  P2P
+//
+//  Created by frank on 15/12/2.
+//  Copyright © 2015年 frank. All rights reserved.
+//
 
 import Foundation
 import CoreData
