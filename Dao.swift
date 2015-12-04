@@ -8,6 +8,40 @@ class Dao {
     let URL:String="http://120.26.215.42:8080"
     //let URL:String="http://127.0.0.1:8080"
     
+    //获取本地最新的一条数据明细
+    func findLocalNewestData()->Product?{
+        
+        print("find")
+        let app=UIApplication.sharedApplication().delegate as! AppDelegate
+        let context = app.managedObjectContext
+        var error:NSError?
+        var fetchRequest:NSFetchRequest=NSFetchRequest()
+        fetchRequest.fetchLimit=1
+        fetchRequest.fetchOffset=0
+        var entity:NSEntityDescription = NSEntityDescription.entityForName("Product", inManagedObjectContext: context)!
+        fetchRequest.entity=entity
+        var sortDescrpitor = NSSortDescriptor(key: "id", ascending: false,selector: Selector("localizedStandardCompare:"))
+        fetchRequest.sortDescriptors=[sortDescrpitor]
+        
+        var result:Product?
+        
+        do{
+            var fetchObjects:[AnyObject] = try context.executeFetchRequest(fetchRequest)
+            if(fetchObjects.count > 0){
+                for _product:Product in fetchObjects as! [Product]{
+                    
+                    result=_product
+                    print(result)
+                }
+            }
+            
+        }catch{
+            print("获取本地最新一条数据明细失败")
+        }
+        return result
+
+    }
+
     //查找本地最新的数据id
     func findLocalNewID()->Int32?{
  
