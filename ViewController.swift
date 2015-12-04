@@ -2,7 +2,7 @@
 
 import UIKit
 
-class ViewController: UIViewController {
+class ViewController: UIViewController,ProductViewDelegate,UIScrollViewDelegate {
     
     var dao:Dao=Dao()
     var _color:UIColor!
@@ -15,12 +15,13 @@ class ViewController: UIViewController {
     var menuIcon:UIButton!
     var scrollView:UIScrollView!
     var iconScrollView:UIScrollView!
+    var _constant=Constant()
+    var oldIconNum:Int=0//计算icon弹出位置
+    var lastNum:Int?//当前最后一条数据序号，从0开始
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        print("init")
-        var _constant=Constant()
         _color=_constant.getRandomColor()
         
         mainView=UIView(frame:self.view.frame)
@@ -46,22 +47,88 @@ class ViewController: UIViewController {
         scrollView=UIScrollView(frame:CGRectMake(0, 66, self.view.frame.width, self.view.frame.height-66-88))
         scrollView.pagingEnabled=true
         scrollView.showsHorizontalScrollIndicator=false
-        //scrollView.backgroundColor=UIColor.grayColor()
-        self.view.addSubview(scrollView)
+        scrollView.delegate=self
+        mainView.addSubview(scrollView)
+        
+        //add icon scrollview
+        iconScrollView=UIScrollView(frame:CGRectMake(0, self.view.frame.height-80, self.view.frame.width, 80))
+        iconScrollView.showsHorizontalScrollIndicator=false
+        mainView.addSubview(iconScrollView)
         
         //获取本地最新数据
         var product:Product = dao.findLocalNewestData()!
         //加载最新数据并显示
-        loadScrollView(0,product:product)
-        loadScrollView(1,product:product)
+        for(var i=0;i<10;i++){
+            loadScrollView(i,product:product)
+            loadIconScrollView(i,product:product)
+        }
+        lastNum=9
+        self.iconScrollView.subviews[0].viewWithTag(1002)!.frame.origin.y -= 20
+
+    }
+    
+    func scrollViewDidEndDecelerating(scrollView: UIScrollView) {
         
+        var pageNo = Int(self.scrollView.contentOffset.x/self.view.frame.width)
+        print("pageNo is: \(pageNo)")
+        
+        //iconScroll roll
+        var cellWidth=(self.view.frame.width)/CGFloat(_constant.ICONNUMBERSHOWINSCREEN)
+        //if self.iconScrollView.contentOffset.x
+        
+        if pageNo >= 4 {
+            
+            self.iconScrollView.setContentOffset(CGPoint(x:cellWidth*CGFloat(pageNo-4),y:0), animated: true)
+        }
+        
+        //icon jump
+        if pageNo != oldIconNum {
+
+            self.iconScrollView.subviews[pageNo].viewWithTag(1002)!.frame.origin.y -= 20
+            self.iconScrollView.subviews[oldIconNum].viewWithTag(1002)!.frame.origin.y += 20
+            oldIconNum=pageNo
+        }
+        
+        if pageNo >= lastNum{
+            
+            loadMore(lastNum!)
+        }
+        
+    }
+    
+    //从服务器申请下载从lastNum开始的，最大长度为LOADNUM的id序号数组
+    func loadMore(lastNum:Int){
+        
+        print("loadMore")
+    }
+    
+    func addDetailView(product:Product){
+        
+        detailView=DetailView(frame: self.view.frame,product: product)
+        detailView.frame.origin.x = self.view.frame.width
+        self.view.addSubview(detailView)
+        
+        UIView.beginAnimations(nil, context: nil)
+        UIView.setAnimationDuration(0.5)
+        detailView.frame.origin.x = 0
+        UIView.setAnimationCurve(UIViewAnimationCurve.EaseOut) //设置动画相对速度
+        UIView.commitAnimations()
     }
     
     func loadScrollView(num:Int,product:Product){
         
         var productView=ProductView(frame: CGRectMake(CGFloat(num)*self.view.frame.width,0,self.view.frame.width,self.view.frame.height-66-88),num: num,product: product)
+        productView.delegate=self
         self.scrollView.addSubview(productView)
         scrollView.contentSize=CGSize(width: CGFloat(num+1)*self.view.frame.width,height: self.view.frame.height-66-88)
+    }
+    
+    func loadIconScrollView(num:Int,product:Product){
+        
+        var cellWidth=(self.view.frame.width)/CGFloat(_constant.ICONNUMBERSHOWINSCREEN)
+        var iconView=IconView(frame: CGRectMake(CGFloat(num)*cellWidth,80-cellWidth,cellWidth,cellWidth),num: num,product: product)
+        self.iconScrollView.addSubview(iconView)
+        iconScrollView.contentSize=CGSize(width: CGFloat(num+1)*cellWidth,height: 80)
     }
     
     
@@ -81,7 +148,6 @@ class ViewController: UIViewController {
     override func touchesBegan(touches: Set<UITouch>, withEvent event: UIEvent?) {
         
         pos0=(touches as NSSet).anyObject()?.locationInView(self.view)
-        print(pos0)
     }
     
     override func touchesMoved(touches: Set<UITouch>, withEvent event: UIEvent?) {

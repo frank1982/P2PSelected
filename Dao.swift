@@ -11,7 +11,6 @@ class Dao {
     //获取本地最新的一条数据明细
     func findLocalNewestData()->Product?{
         
-        print("find")
         let app=UIApplication.sharedApplication().delegate as! AppDelegate
         let context = app.managedObjectContext
         var error:NSError?
@@ -31,7 +30,6 @@ class Dao {
                 for _product:Product in fetchObjects as! [Product]{
                     
                     result=_product
-                    print(result)
                 }
             }
             

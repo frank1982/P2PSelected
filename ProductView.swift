@@ -4,11 +4,15 @@ import UIKit
 import CoreData
 
 class ProductView: UIView {
+    
+    var delegate:ProductViewDelegate?
+    var _product:Product?
 
     init(frame: CGRect,num:Int,product:Product) {
         
         super.init(frame: frame)
         
+        _product=product
         var _constant=Constant()
         var bgView=UIView(frame:CGRectMake(10, 0, self.frame.width-20, self.frame.height))
         bgView.backgroundColor=UIColor.whiteColor()
@@ -26,14 +30,13 @@ class ProductView: UIView {
         title.text=product.title
         title.font=UIFont(name: _constant._textFont, size: 16)
         title.sizeToFit()
-        title.center=CGPoint(x: 20+name.frame.width+10+title.frame.width/2,y: 33)
+        title.center=CGPoint(x: 10+name.frame.width+10+title.frame.width/2,y: 33)
         bgView.addSubview(title)
         
         var headImage=UIImageView(frame:CGRectMake(0, 66, self.frame.width-20, self.frame.height*0.25))
         headImage.image=UIImage(data: product.headImage!)
         headImage.contentMode=UIViewContentMode.ScaleToFill
         bgView.addSubview(headImage)
-        
         
         var str=product.descript
         var attributedString=NSMutableAttributedString(string: str!)
@@ -50,7 +53,7 @@ class ProductView: UIView {
         descriptLabel.numberOfLines = 0
         descriptLabel.attributedText = attributedString
         var height=min(fontSize.height,self.frame.height-headImage.frame.origin.y-headImage.frame.height-10-76)
-        descriptLabel.frame=CGRectMake(10, headImage.frame.origin.y+headImage.frame.height+10, fontSize.width, height)//高度取最小值
+        descriptLabel.frame=CGRectMake(10, headImage.frame.origin.y+headImage.frame.height+20, fontSize.width, height)//高度取最小值
         bgView.addSubview(descriptLabel)
         
         var author=UILabel()
@@ -64,7 +67,7 @@ class ProductView: UIView {
     }
     override func touchesBegan(touches: Set<UITouch>, withEvent event: UIEvent?) {
         
-        print("touch")
+        delegate?.addDetailView(_product!)
     }
     
     required init?(coder aDecoder: NSCoder) {
@@ -72,4 +75,9 @@ class ProductView: UIView {
     }
 
     
+}
+
+protocol ProductViewDelegate{
+    
+    func addDetailView(product:Product)
 }
