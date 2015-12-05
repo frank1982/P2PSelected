@@ -18,6 +18,7 @@ class ViewController: UIViewController,ProductViewDelegate,UIScrollViewDelegate 
     var _constant=Constant()
     var oldIconNum:Int=0//计算icon弹出位置
     var lastNum:Int?//当前最后一条数据序号，从0开始
+    var lastId:Int?//当前显示出来的最后一条数据id
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -58,12 +59,74 @@ class ViewController: UIViewController,ProductViewDelegate,UIScrollViewDelegate 
         //获取本地最新数据
         var product:Product = dao.findLocalNewestData()!
         //加载最新数据并显示
+        /*
         for(var i=0;i<10;i++){
             loadScrollView(i,product:product)
             loadIconScrollView(i,product:product)
         }
         lastNum=9
+        */
+        
+            loadScrollView(0,product:product)
+            loadIconScrollView(0,product:product)
+        
+        lastNum=0
+        
+
         self.iconScrollView.subviews[0].viewWithTag(1002)!.frame.origin.y -= 20
+        
+        //异步加载其他数据
+        
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), {
+            
+            //首先从服务端查询最长
+            //let LOADNUM=10//一次显示或加载的最大数据数量
+            //"/findNewestIDByLength.action"
+            var productIDArray:NSArray=self.dao.findNewestIDByLength(self._constant.LOADNUM, id: (product.id?.intValue)!)!
+            //print(self.dao.isDataExistInLocal((product.id?.intValue)!))
+            for(var i=0;i<productIDArray.count;i++){
+                
+                //首先检查该条数据是否本地存在?
+                var str:String=productIDArray[i] as! String
+                //print(str)
+                if self.dao.isDataExistInLocal(Int32(str)!) == false {//本地不存在
+                    
+                    //从服务端下载该条数据的完整信息
+                    var tmpProduct = self.dao.getDataFromServerByID(str)
+                    print("\(str)从服务端下载")
+                    self.dao.saveData(tmpProduct!)
+                   
+                                        print(self.lastNum)
+                        //通知主线程刷新
+                        dispatch_async(dispatch_get_main_queue(), {
+                            
+                            print("准备将\(str)插入位置\(self.lastNum!)")
+                            self.loadScrollView(self.lastNum!+1,product:tmpProduct!)
+                            self.loadIconScrollView(self.lastNum!+1,product:tmpProduct!)
+                            self.lastNum = self.lastNum!+1
+
+                        });
+                    
+                }else{//本地已经有该条数据
+                    
+                    print("\(str)本地已经有该条数据")
+                    var tmpProduct2 = self.dao.findLocalDataById(Int32(str)!)
+                    
+                    print("准备将\(str)插入位置\(self.lastNum!)")
+                    //通知主线程刷新
+                    dispatch_async(dispatch_get_main_queue(), {
+                        
+                        print("now num is:\(self.lastNum!)")
+                        self.loadScrollView(self.lastNum!+1,product:tmpProduct2!)
+                        self.loadIconScrollView(self.lastNum!+1,product:tmpProduct2!)
+                        self.lastNum = self.lastNum!+1
+                    });
+                }
+                
+            }
+            
+        })
+        
 
     }
     
@@ -83,9 +146,11 @@ class ViewController: UIViewController,ProductViewDelegate,UIScrollViewDelegate 
         
         //icon jump
         if pageNo != oldIconNum {
-
-            self.iconScrollView.subviews[pageNo].viewWithTag(1002)!.frame.origin.y -= 20
-            self.iconScrollView.subviews[oldIconNum].viewWithTag(1002)!.frame.origin.y += 20
+            
+            print("wewqe")
+            print(self.iconScrollView.subviews[1])
+            self.iconScrollView.subviews[pageNo].viewWithTag(1002)?.frame.origin.y -= 20
+            self.iconScrollView.subviews[oldIconNum].viewWithTag(1002)?.frame.origin.y += 20
             oldIconNum=pageNo
         }
         

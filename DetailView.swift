@@ -1,44 +1,57 @@
 
 import UIKit
 
-class DetailView: UIView,UIScrollViewDelegate,ScrollViewDelegate {
+class DetailView: UIView,UIScrollViewDelegate{
 
     var _product:Product?
     var _pos:CGFloat?//测量高度
     var pos0:CGPoint?
     var pos1:CGPoint?
     var pos2:CGPoint?
+    var detailScroll:UIScrollView!
+    var testView:UIView!
+    var netTranslation : CGPoint!
+    var headHeight:CGFloat!
+    var heightOfDown:CGFloat!
+    var imageHeight:CGFloat?
+    var downBtnMoved:Bool=false
+    var toolView:UIView!
+    var downBtn:UIButton!
     
     init(frame: CGRect,product:Product) {
         
         super.init(frame: frame)
         
         var _constant=Constant()
+        netTranslation = CGPoint(x: 0, y: 0)
         _product=product
-        
+
         //add scroll
-        var detailScroll=UIScrollView(frame:self.frame)
+        detailScroll=UIScrollView(frame:self.frame)
         detailScroll.backgroundColor=UIColor.whiteColor()
+        detailScroll.delegate=self
+        //self.detailScroll.delaysContentTouches=false
         self.addSubview(detailScroll)
-        
-        var contentView=ScrollContentView(frame:self.frame)
-        contentView.delegate=self
-        detailScroll.addSubview(contentView)
-        
+
         //add headImage
         var headImage=UIImageView(frame:CGRectMake(0,0,self.frame.width,self.frame.height*0.25))
         headImage.image=UIImage(data: product.headImage!)
         headImage.contentMode=UIViewContentMode.ScaleToFill
-        contentView.addSubview(headImage)
+        headImage.tag=3001
+        detailScroll.addSubview(headImage)
+        headHeight=headImage.frame.height
         
         //add tool area
-        var toolView=UIView(frame:CGRectMake(0,headImage.frame.origin.y+headImage.frame.height,self.frame.width,self.frame.height*0.15))
+        var contentView=UIView()
+        _pos=20
+        toolView=UIView(frame:CGRectMake(0, _pos!,self.frame.width,self.frame.height*0.15))
         toolView.backgroundColor=UIColor.whiteColor()
+        toolView.tag=3002
         contentView.addSubview(toolView)
         
         //add icon in tool area
-        var imageHeight = toolView.frame.height-60
-        var icon=UIImageView(frame:CGRectMake(20, 30, imageHeight, imageHeight))
+        imageHeight = toolView.frame.height-60
+        var icon=UIImageView(frame:CGRectMake(20, 30, imageHeight!, imageHeight!))
         icon.image=UIImage(data: product.iconImage!)
         icon.contentMode=UIViewContentMode.ScaleToFill
         toolView.addSubview(icon)
@@ -60,16 +73,21 @@ class DetailView: UIView,UIScrollViewDelegate,ScrollViewDelegate {
         toolView.addSubview(title)
         
         //add downBtn in tool area
-        var downBtn=UIButton(frame: CGRectMake(self.frame.width-imageHeight-20, 30, imageHeight, imageHeight))
+        downBtn=UIButton(frame: CGRectMake(self.frame.width-imageHeight!-20, 30, imageHeight!, imageHeight!))
         downBtn.setImage(UIImage(named: "Down"), forState: UIControlState.Normal)
         downBtn.setImage(UIImage(named: "Down"), forState: UIControlState.Selected)
         downBtn.adjustsImageWhenHighlighted=false
         downBtn.addTarget(self, action: "downApp", forControlEvents: UIControlEvents.TouchUpInside)
+        downBtn.tag=3003
         toolView.addSubview(downBtn)
+        heightOfDown=headHeight//判断downbtn移动的基准点
         
         //初始内容高度
         _pos=toolView.frame.origin.y+toolView.frame.height+20
+        
         //begin add content
+        
+        
         
         //NSData to array<NSDictionary>
         var arrayData:Array<NSDictionary> = NSKeyedUnarchiver.unarchiveObjectWithData(_product!.detailUrl!) as! Array<NSDictionary>
@@ -143,7 +161,11 @@ class DetailView: UIView,UIScrollViewDelegate,ScrollViewDelegate {
             //print("pos is:\(_pos!)")
         }
         //set size of scrollView
-        detailScroll.contentSize=CGSize(width: self.frame.width,height: _pos!+60)
+        contentView.sizeToFit()
+        contentView.frame=CGRectMake(0,toolView.frame.origin.y+toolView.frame.height,self.frame.width,_pos!+60)
+        contentView.backgroundColor=UIColor.whiteColor()
+        detailScroll.addSubview(contentView)
+        detailScroll.contentSize=CGSize(width: self.frame.width,height: _pos!+60+toolView.frame.origin.y+toolView.frame.height)
         
         //add backBtn
         var backBtn=UIButton(frame: CGRectMake(15, 30, 36, 36))
@@ -151,31 +173,117 @@ class DetailView: UIView,UIScrollViewDelegate,ScrollViewDelegate {
         backBtn.setImage(UIImage(named: "Back"), forState: UIControlState.Selected)
         backBtn.adjustsImageWhenHighlighted=false
         backBtn.addTarget(self, action: "back", forControlEvents: UIControlEvents.TouchUpInside)
+        backBtn.tag=3004
         self.addSubview(backBtn)
+        
+        var panGesture = UIPanGestureRecognizer(target: self, action: "handlePanGesture:")
+        self.addGestureRecognizer(panGesture)
 
     }
     
-    //protocol func
-    func touchView(point:CGPoint){
-        pos0=point
-    }
-    func moveView(point:CGPoint){
-        pos1=point
-        var dx=pos1!.x-pos0!.x
-        //pos0=pos1//获取变化的速度，否则太快
+    func handlePanGesture(sender: UIPanGestureRecognizer){
+        //得到拖的过程中的xy坐标
+        var translation : CGPoint = sender.translationInView(self)
+        print(translation.x)
+        var dx=translation.x-netTranslation.x
         dx = max(-self.frame.origin.x,dx)//左边界...
         dx = min(self.frame.width*3/4-self.frame.origin.x,dx)//右边界...
+        
         self.frame.origin.x += dx
-        
+        netTranslation.x = translation.x
+
+        if sender.state == UIGestureRecognizerState.Ended{
+            
+            if self.frame.origin.x >= self.frame.width/2{
+                back()
+            }else{
+                UIView.animateWithDuration(0.3,
+                    animations: {
+                        self.frame.origin.x = 0
+                    },
+                    completion: {
+                        (finished) in
+                    }
+                )
+            }
+            
+        }
     }
-    func endView(point:CGPoint){
-        
-    }
-    
+
     //listent scroll action
     func scrollViewDidScroll(scrollView: UIScrollView) {
         
+        if detailScroll.contentOffset.y <= 0 {//向下滑动
+            
+            print(detailScroll.contentOffset.y)
+            var newHeight=headHeight-detailScroll.contentOffset.y
+            print(newHeight)
+            var x=newHeight/headHeight//放大系数
+            print(x)
+            
+            var midPoint=CGPoint(x: self.frame.width/2,y: newHeight/2)
+            var pPoint=self.convertPoint(midPoint, toView: self.detailScroll)
+            self.detailScroll.viewWithTag(3001)!.center=pPoint
+            self.detailScroll.viewWithTag(3001)!.layer.setAffineTransform(CGAffineTransformMakeScale(x,x))
+            
+        }else{//向上滑动
+            
+            //需要保持head不动
+            var centerPoint=CGPoint(x:0,y:0)
+            //坐标转换...
+            var midPoint = self.convertPoint(centerPoint, toView: self.detailScroll)
+            self.detailScroll.viewWithTag(3001)!.frame.origin=midPoint
+            
+        }
         
+        if detailScroll.contentOffset.y >= heightOfDown && downBtnMoved == false{
+            
+            //在toolView的坐标
+            downBtnMoved=true
+            var oldPos=self.downBtn.frame.origin
+            //转换为self的坐标
+            var changedPos = self.convertPoint(oldPos, fromView: self.toolView)
+            print(changedPos)
+            
+            self.downBtn.removeFromSuperview()
+            self.downBtn.frame.origin=changedPos
+            self.addSubview(self.downBtn)
+            UIView.animateWithDuration(0.3,
+                animations: {
+                    self.downBtn.frame=CGRectMake(71, 30, 36, 36)
+                    
+                },
+                completion: {
+                    (finished) in
+                    
+                }
+            )
+
+        }else if detailScroll.contentOffset.y < heightOfDown && downBtnMoved == true{
+            
+            
+            downBtnMoved=false
+            //在selfView的坐标
+            var oldPos=self.downBtn.frame.origin
+            //转换为toolView的坐标
+            var changedPos = self.convertPoint(oldPos, toView: self.toolView)
+ 
+            
+            self.downBtn.removeFromSuperview()
+            self.downBtn.frame.origin=changedPos
+            self.toolView.addSubview(self.downBtn)
+            UIView.animateWithDuration(0.3,
+                animations: {
+                    self.downBtn.frame=CGRectMake(self.frame.width-self.imageHeight!-20, 30, self.imageHeight!, self.imageHeight!)
+                    
+                },
+                completion: {
+                    (finished) in
+                    
+                }
+            )
+        }
+
     }
     
     func back(){

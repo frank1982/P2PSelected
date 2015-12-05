@@ -8,6 +8,95 @@ class Dao {
     let URL:String="http://120.26.215.42:8080"
     //let URL:String="http://127.0.0.1:8080"
     
+    
+    //根据id查找本地一条数据的明细
+    func findLocalDataById(id:Int32)->Product?{
+        
+        let app=UIApplication.sharedApplication().delegate as! AppDelegate
+        let context = app.managedObjectContext
+        var error:NSError?
+        var fetchRequest:NSFetchRequest=NSFetchRequest()
+        var entity:NSEntityDescription = NSEntityDescription.entityForName("Product", inManagedObjectContext: context)!
+        fetchRequest.entity=entity
+        //var sortDescrpitor = NSSortDescriptor(key: "id", ascending: false,selector: Selector("localizedStandardCompare:"))
+        //fetchRequest.sortDescriptors=[sortDescrpitor]
+        //设置查询条件
+        let predicate=NSPredicate(format: "id = %i", id)
+        fetchRequest.predicate=predicate
+        
+        var result:Product?
+        
+        do{
+            var fetchObjects:[AnyObject] = try context.executeFetchRequest(fetchRequest)
+            if(fetchObjects.count > 0){
+                for _product:Product in fetchObjects as! [Product]{
+                    
+                    result=_product
+                }
+            }
+            
+        }catch{
+            print("根据id查找本地一条数据的明细失败")
+        }
+        return result!
+    }
+
+    
+    //根据id查找一条数据是否在本地存在
+    func isDataExistInLocal(id:Int32)->Bool{
+        
+        let app=UIApplication.sharedApplication().delegate as! AppDelegate
+        let context = app.managedObjectContext
+        var error:NSError?
+        var fetchRequest:NSFetchRequest=NSFetchRequest()
+        var entity:NSEntityDescription = NSEntityDescription.entityForName("Product", inManagedObjectContext: context)!
+        fetchRequest.entity=entity
+        //var sortDescrpitor = NSSortDescriptor(key: "id", ascending: false,selector: Selector("localizedStandardCompare:"))
+        //fetchRequest.sortDescriptors=[sortDescrpitor]
+        //设置查询条件
+        let predicate=NSPredicate(format: "id = %i", id)
+        fetchRequest.predicate=predicate
+        
+        var result:Bool?
+        
+        do{
+            var fetchObjects:[AnyObject] = try context.executeFetchRequest(fetchRequest)
+            if(fetchObjects.count > 0){
+                result=true
+            }else{
+                result=false
+            }
+            
+        }catch{
+            print("根据id查找一条数据是否在本地失败")
+        }
+        return result!
+    }
+    
+    //从服务端查询从id开始的num个数据序号，不包含id本身
+    func findNewestIDByLength(num:Int,id:Int32)->NSArray?{
+        
+        print("findNewestIDByLength")
+        var urlString=URL+"/touWhat/findNewestIDByLength.action?num="+String(num)+"&id="+String(id)
+        var nsUrl:NSURL=NSURL(string:urlString)!
+        var request:NSURLRequest=NSURLRequest(URL: nsUrl)
+        var response:NSURLResponse?
+        var error:NSError?
+        var result:NSArray?
+        do {
+            let data = try NSURLConnection.sendSynchronousRequest(request, returningResponse: &response)
+            var str=NSString(data:data,encoding:NSUTF8StringEncoding)
+            result=str?.componentsSeparatedByString("*")
+            print(result)
+            
+        }catch(let error){
+            print("查找服务器从id开始的num个id失败")
+        }
+        return result
+
+    }
+    
+    
     //获取本地最新的一条数据明细
     func findLocalNewestData()->Product?{
         
@@ -201,17 +290,17 @@ class Dao {
                     do{
                         try context.save()
                     }catch(let error){
-                        print("本地数据删除失败...")
+                        print("删除本地最旧一条数据失败...")
                         print("error")
                     }
                 }
             }
         }catch(let error){
             
-            print("在执行删除本地数据时，查询本地数据失败...")
+            print("在执行删除本地最旧一条数据时，查询本地数据失败...")
             print("error")
         }
-        print("本地数据已经删除...")
+        print("删除本地最旧一条数据...")
 
     }
     
