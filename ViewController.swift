@@ -137,7 +137,7 @@ class ViewController: UIViewController,ProductViewDelegate,UIScrollViewDelegate 
     func scrollViewDidEndDecelerating(scrollView: UIScrollView) {
         
         self.scrollView.scrollEnabled=false
-        sleep(1)
+        //sleep(1)
         var pageNo = Int(self.scrollView.contentOffset.x/self.view.frame.width)
         print("pageNo is: \(pageNo)")
         
