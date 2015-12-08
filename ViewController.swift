@@ -20,6 +20,8 @@ class ViewController: UIViewController,ProductViewDelegate,UIScrollViewDelegate 
     var lastNum:Int?//当前最后一条数据序号，从0开始
     var lastId:Int32?//当前显示出来的最后一条数据id
     
+    var bgViewOfIcon:UIView!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -55,6 +57,11 @@ class ViewController: UIViewController,ProductViewDelegate,UIScrollViewDelegate 
         iconScrollView=UIScrollView(frame:CGRectMake(0, self.view.frame.height-80, self.view.frame.width, 80))
         iconScrollView.showsHorizontalScrollIndicator=false
         mainView.addSubview(iconScrollView)
+        
+        //需要用bgview过渡一下，否则直接scrollView.addSubview的没有考虑conffset
+        bgViewOfIcon=UIView(frame:CGRectMake(0, 0, self.view.frame.width, 80))
+        iconScrollView.addSubview(bgViewOfIcon)
+        
         
         //获取本地最新数据
         var product:Product = dao.findLocalNewestData()!
@@ -93,37 +100,37 @@ class ViewController: UIViewController,ProductViewDelegate,UIScrollViewDelegate 
                     
                     //从服务端下载该条数据的完整信息
                     var tmpProduct = self.dao.getDataFromServerByID(str)
-                    print("\(str)从服务端下载")
+                    //print("\(str)从服务端下载")
                     self.dao.saveData(tmpProduct!)
                    
-                                        print(self.lastNum)
+                                        //print(self.lastNum)
                         //通知主线程刷新
                         dispatch_async(dispatch_get_main_queue(), {
                             
-                            print("准备将\(str)插入位置\(self.lastNum!)")
+                            //print("准备将\(str)插入位置\(self.lastNum!)")
                             self.loadScrollView(self.lastNum!+1,product:tmpProduct!)
                             self.loadIconScrollView(self.lastNum!+1,product:tmpProduct!)
                             self.lastNum = self.lastNum!+1
                             self.lastId=tmpProduct!.id?.intValue
-                            print("当前最后一条数据的id是:\(self.lastId)")
+                            //print("当前最后一条数据的id是:\(self.lastId)")
 
                         });
                     
                 }else{//本地已经有该条数据
                     
-                    print("\(str)本地已经有该条数据")
+                    //print("\(str)本地已经有该条数据")
                     var tmpProduct2 = self.dao.findLocalDataById(Int32(str)!)
                     
-                    print("准备将\(str)插入位置\(self.lastNum!)")
+                    //print("准备将\(str)插入位置\(self.lastNum!)")
                     //通知主线程刷新
                     dispatch_async(dispatch_get_main_queue(), {
                         
-                        print("now num is:\(self.lastNum!)")
+                        //print("now num is:\(self.lastNum!)")
                         self.loadScrollView(self.lastNum!+1,product:tmpProduct2!)
                         self.loadIconScrollView(self.lastNum!+1,product:tmpProduct2!)
                         self.lastNum = self.lastNum!+1
                         self.lastId=tmpProduct2!.id?.intValue
-                        print("当前最后一条数据的id是:\(self.lastId)")
+                        //print("当前最后一条数据的id是:\(self.lastId)")
                     });
                 }
                 
@@ -139,7 +146,7 @@ class ViewController: UIViewController,ProductViewDelegate,UIScrollViewDelegate 
         self.scrollView.scrollEnabled=false
         //sleep(1)
         var pageNo = Int(self.scrollView.contentOffset.x/self.view.frame.width)
-        print("pageNo is: \(pageNo)")
+        //print("pageNo is: \(pageNo)")
         
         //iconScroll roll
         var cellWidth=(self.view.frame.width)/CGFloat(_constant.ICONNUMBERSHOWINSCREEN)
@@ -147,32 +154,48 @@ class ViewController: UIViewController,ProductViewDelegate,UIScrollViewDelegate 
         
         if pageNo >= 4 {
             
-            self.iconScrollView.setContentOffset(CGPoint(x:cellWidth*CGFloat(pageNo-4),y:0), animated: true)
-        }
-        
-        //icon jump
-        if pageNo != oldIconNum {
-            
-            self.iconScrollView.viewWithTag(6000+pageNo)?.viewWithTag(1002)?.frame.origin.y -= 20
-            self.iconScrollView.viewWithTag(6000+oldIconNum)?.viewWithTag(1002)?.frame.origin.y += 20
-            //print(self.iconScrollView.subviews[1])
-            //self.iconScrollView.subviews[pageNo].viewWithTag(1002)?.frame.origin.y -= 20
-            //self.iconScrollView.subviews[oldIconNum].viewWithTag(1002)?.frame.origin.y += 20
-            oldIconNum=pageNo
+            self.iconScrollView.setContentOffset(CGPoint(x:cellWidth*CGFloat(pageNo-4),y:0), animated: true)//animated=true，异步动画
+
         }
         
         if pageNo >= lastNum{
-            
-            print("已经到达最大\(lastNum)")
+
             loadMore(lastNum!)
+            
         }
+        //icon jump
+        if pageNo != oldIconNum {
+            
+            self.iconScrollView.viewWithTag(6000+oldIconNum)?.viewWithTag(1002)?.frame.origin.y += 20
+            UIView.animateWithDuration(0.1,
+                animations: {
+                    self.iconScrollView.viewWithTag(6000+pageNo)?.viewWithTag(1002)?.frame.origin.y -= 20
+                },
+                completion: {
+                    (finished) in
+                    UIView.animateWithDuration(0.2, delay: 0,usingSpringWithDamping: 0.2,initialSpringVelocity: 5.0,options: UIViewAnimationOptions.CurveEaseOut,
+                        animations: {
+                            self.iconScrollView.viewWithTag(6000+pageNo)?.viewWithTag(1002)?.frame.origin.y += 6
+                        }, completion: {
+                            (finished:Bool)->Void in
+                            UIView.animateWithDuration(0.2, delay: 0,usingSpringWithDamping: 0.2,initialSpringVelocity: 5.0,options: UIViewAnimationOptions.CurveEaseOut,
+                                animations: {
+                                     self.iconScrollView.viewWithTag(6000+pageNo)?.viewWithTag(1002)?.frame.origin.y -= 3
+                                }, completion: nil)
+                           
+                    })})
+
+            oldIconNum=pageNo
+        }
+        
+        
         self.scrollView.scrollEnabled=true
     }
     
     //从服务器申请下载从lastNum开始的，最大长度为LOADNUM的id序号数组
     func loadMore(lastNum:Int){
         
-        print("loadMore")
+        //print("loadMore")
         //加载loading
         var activityIndicatorView = UIActivityIndicatorView(activityIndicatorStyle: UIActivityIndicatorViewStyle.WhiteLarge)
         activityIndicatorView.color=_constant.getRandomColor()
@@ -191,19 +214,22 @@ class ViewController: UIViewController,ProductViewDelegate,UIScrollViewDelegate 
                     var str:String=productIDArray[i] as! String
                     //从服务端下载该条数据的完整信息
                     var tmpProduct = self.dao.getDataFromServerByID(str)
-                    print("\(str)从服务端下载")
+                    //print("\(str)从服务端下载")
                     //通知主线程刷新
                     dispatch_async(dispatch_get_main_queue(), {
                         
-                        print("准备将\(str)插入位置\(self.lastNum!)")
+                        //print("准备插入位置\(self.lastNum!)")
+                        //print("load more finish")
+                        //print("当前conffset is:\(self.iconScrollView.contentOffset.x)")
                         self.loadScrollView(self.lastNum!+1,product:tmpProduct!)
                         self.loadIconScrollView(self.lastNum!+1,product:tmpProduct!)
                         self.lastNum = self.lastNum!+1
                         self.lastId=tmpProduct!.id?.intValue
-                        print("当前最后一条数据的id是:\(self.lastId)")
+                        //print("当前最后一条数据的id是:\(self.lastId)")
                         activityIndicatorView.stopAnimating()
                     });
             }
+            
             
         })
 
@@ -235,8 +261,16 @@ class ViewController: UIViewController,ProductViewDelegate,UIScrollViewDelegate 
         var cellWidth=(self.view.frame.width)/CGFloat(_constant.ICONNUMBERSHOWINSCREEN)
         var iconView=IconView(frame: CGRectMake(CGFloat(num)*cellWidth,80-cellWidth,cellWidth,cellWidth),num: num,product: product)
         iconView.tag=6000+num//区分不同的icon
+        bgViewOfIcon.addSubview(iconView)
+        iconScrollView.contentSize=CGSize(width: bgViewOfIcon.frame.width,height: 80)
+        
+        /*
+        var cellWidth=(self.view.frame.width)/CGFloat(_constant.ICONNUMBERSHOWINSCREEN)
+        var iconView=IconView(frame: CGRectMake(CGFloat(num)*cellWidth,80-cellWidth,cellWidth,cellWidth),num: num,product: product)
+        iconView.tag=6000+num//区分不同的icon
         self.iconScrollView.addSubview(iconView)
         iconScrollView.contentSize=CGSize(width: CGFloat(num+1)*cellWidth,height: 80)
+        */
     }
     
     

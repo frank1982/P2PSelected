@@ -93,7 +93,7 @@ class DetailView: UIView,UIScrollViewDelegate{
         var arrayData:Array<NSDictionary> = NSKeyedUnarchiver.unarchiveObjectWithData(_product!.detailUrl!) as! Array<NSDictionary>
         for(var i=0;i<arrayData.count;i++){
             
-            print("count is:\(i)")
+            //print("count is:\(i)")
             var type:Int=arrayData[i]["type"] as! Int
             switch type{//100=title,101=descript,102=imageUrl
                 
@@ -184,7 +184,7 @@ class DetailView: UIView,UIScrollViewDelegate{
     func handlePanGesture(sender: UIPanGestureRecognizer){
         //得到拖的过程中的xy坐标
         var translation : CGPoint = sender.translationInView(self)
-        print(translation.x)
+        //print(translation.x)
         var dx=translation.x-netTranslation.x
         dx = max(-self.frame.origin.x,dx)//左边界...
         dx = min(self.frame.width*3/4-self.frame.origin.x,dx)//右边界...
@@ -215,11 +215,11 @@ class DetailView: UIView,UIScrollViewDelegate{
         
         if detailScroll.contentOffset.y <= 0 {//向下滑动
             
-            print(detailScroll.contentOffset.y)
+            //print(detailScroll.contentOffset.y)
             var newHeight=headHeight-detailScroll.contentOffset.y
-            print(newHeight)
+            //print(newHeight)
             var x=newHeight/headHeight//放大系数
-            print(x)
+            //print(x)
             
             var midPoint=CGPoint(x: self.frame.width/2,y: newHeight/2)
             var pPoint=self.convertPoint(midPoint, toView: self.detailScroll)
@@ -243,7 +243,7 @@ class DetailView: UIView,UIScrollViewDelegate{
             var oldPos=self.downBtn.frame.origin
             //转换为self的坐标
             var changedPos = self.convertPoint(oldPos, fromView: self.toolView)
-            print(changedPos)
+            //print(changedPos)
             
             self.downBtn.removeFromSuperview()
             self.downBtn.frame.origin=changedPos

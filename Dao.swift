@@ -76,7 +76,7 @@ class Dao {
     //从服务端查询从id开始的num个数据序号，不包含id本身
     func findNewestIDByLength(num:Int,id:Int32)->NSArray?{
         
-        print("findNewestIDByLength")
+        //print("findNewestIDByLength")
         var urlString=URL+"/touWhat/findNewestIDByLength.action?num="+String(num)+"&id="+String(id)
         var nsUrl:NSURL=NSURL(string:urlString)!
         var request:NSURLRequest=NSURLRequest(URL: nsUrl)
@@ -87,7 +87,7 @@ class Dao {
             let data = try NSURLConnection.sendSynchronousRequest(request, returningResponse: &response)
             var str=NSString(data:data,encoding:NSUTF8StringEncoding)
             result=str?.componentsSeparatedByString("*")
-            print(result)
+            //print(result)
             
         }catch(let error){
             print("查找服务器从id开始的num个id失败")
@@ -183,7 +183,7 @@ class Dao {
     //根据id从服务端同步获取数据明细
     func getDataFromServerByID(id:String)->Product?{
         
-        print("getDataFromServerByID:\(id)")
+        //print("getDataFromServerByID:\(id)")
         let app=UIApplication.sharedApplication().delegate as! AppDelegate
         let context=app.managedObjectContext
         var urlString=URL+"/touWhat/getProductInfoByID2.action?id="+id
@@ -269,7 +269,7 @@ class Dao {
     //删除本地最旧一条数据
     func delLocalOldestData(){
         
-        print("delLocalOldestData")
+        //print("delLocalOldestData")
         let app=UIApplication.sharedApplication().delegate as! AppDelegate
         let context=app.managedObjectContext
         var error:NSError?
